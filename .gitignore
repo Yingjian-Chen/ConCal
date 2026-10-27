@@ -132,3 +132,6 @@ data/
 .tmp
 *ports
 
+# Modified for ConCal: exclude local models and run artifacts.
+/models/
+/runs/

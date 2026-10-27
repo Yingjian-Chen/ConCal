@@ -1,3 +1,4 @@
+# Modified for ConCal: share training dependencies across benchmarks.
 # Common dependencies; install the benchmark-specific vLLM version separately.
 accelerate
 codetiming

@@ -1,3 +1,4 @@
+# Modified for ConCal: initialize WebShop worker dependencies.
 # Copyright 2025 Nanyang Technological University (NTU), Singapore
 # and the verl-agent (GiGPO) team.
 #

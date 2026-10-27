@@ -1,3 +1,4 @@
+# Modified for ConCal: record transition metadata for continuation calibration.
 # Copyright 2025 Nanyang Technological University (NTU), Singapore
 # and the verl-agent (GiGPO) team.
 #

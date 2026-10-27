@@ -1,3 +1,4 @@
+# Modified for ConCal: add continuation-calibration settings.
 data:
   tokenizer: null
   use_shm: False
