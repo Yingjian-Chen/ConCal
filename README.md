@@ -1,69 +1,113 @@
 # ConCal
+Code for **Action-Value Calibration via Continuation Sharing for Long-Horizon Agentic Reinforcement Learning**.
 
-Continuation calibration for group-based agent reinforcement learning.
+In long-horizon agentic RL, methods such as GiGPO compare actions at shared states, but value estimates based on a single sampled continuation remain sensitive to later decisions. ConCal (Continuation Calibration) addresses this by sharing continuation evidence within a rollout batch. It matches same-task visits by their incoming state-action-state transitions, combines shared evidence with each visit’s own transition estimate, and recursively propagates calibrated values backward to refine earlier action-value estimates. This reduces dependence on individual continuations and mitigates local credit distortions without additional rollouts.
 
-ConCal matches visits by task and incoming transition, recursively combines
-each visit's transition estimate with its sharing-pool mean, and uses the
-calibrated successor values in GiGPO's step advantages.
+## 1. Setup
 
-## Implementation
+Use separate Conda environments for ALFWorld and WebShop. Run the following commands from the repository root.
 
-| File | Role |
-| --- | --- |
-| `context_credit/core.py` | Matching, recursive continuation values and action values |
-| `context_credit/adapter.py` | Integration with GiGPO's state groups and episode advantages |
-| `context_credit/common_scale.py` | Shared batch normalization scale |
-| `context_credit/transport.py` | Recorded transitions and physical-visit mapping |
-| `context_credit/diagnostics.py` | Optional frozen rollout snapshots |
+### ALFWorld
 
-The actor, rollout engine, PPO objective, KL loss and optimizer use verl-agent.
-ALFWorld and WebShop share the same estimator. With WebShop's mean-only
-reference normalization, the common coefficient is one.
-
-## Setup
-
-Follow the [verl-agent environment setup](https://github.com/langfengQ/verl-agent)
-for ALFWorld and WebShop, and install this checkout with `pip install -e .`.
-The reproduced runs use vLLM 0.11.0 for ALFWorld and 0.8.4 for WebShop in
-separate environments. Prepare the Qwen2.5-1.5B-Instruct model and benchmark
-datasets following the upstream instructions.
-
-The root `requirements.txt` lists common dependencies. Benchmark-specific
-environment dependencies follow the upstream installation instructions.
-
-Set `PROJECT_ROOT` to the directory containing your `models`, `data` and `envs`
-directories. `MODEL_DIR`, `DATA_DIR`, `CONDA_ENV` and `RUN_DIR` can also be set
-individually. To use an already activated environment, set
-`SKIP_CONDA_ACTIVATE=1`.
+Install the training environment:
 
 ```bash
-PROJECT_ROOT=/path/to/project SEED=123 bash run_concal_alfworld.sh
-PROJECT_ROOT=/path/to/project SEED=123 bash run_concal_webshop.sh
+conda create -n concal-alfworld python=3.12 -y
+conda activate concal-alfworld
+
+pip install vllm==0.11.0 "ray[default]==2.50.0" \
+  tensordict==0.10.0 transformers==4.57.3
+pip install flash-attn==2.8.3 --no-build-isolation
+pip install -r requirements.txt
+pip install -e . --no-deps
+pip install gymnasium==0.29.1 stable-baselines3==2.6.0 alfworld==0.4.2
 ```
 
-Both scripts retain the experiment's 150 updates, 16 tasks and eight
-trajectories per task. `N_GPUS` defaults to four. Use a new `RUN_DIR` for each
-run. The WebShop entry uses the GraphGPO text-rich setting.
-
-To resolve and check a configuration before training:
+Download ALFWorld data and prepare the trainer inputs:
 
 ```bash
-PROJECT_ROOT=/path/to/project PREPARE_VALIDATE_ONLY=1 bash run_concal_alfworld.sh
+export ALFWORLD_DATA="$HOME/.cache/alfworld"
+alfworld-download -f
+
+mkdir -p data/verl-agent/text
+python examples/data_preprocess/prepare.py --mode text \
+  --local_dir ./data/verl-agent \
+  --train_data_size 16 --val_data_size 128
 ```
 
-Set `DUMP_EVERY=5` to save a frozen batch every five updates under
-`$RUN_DIR/rollouts`. Standard training metrics are logged through GiGPO.
-Authenticate W&B through `wandb login` or `WANDB_API_KEY`, or set
-`WANDB_MODE=offline` for offline logging.
+### WebShop
 
-## Tests
+Install WebShop and download the 1,000-product dataset:
 
 ```bash
-python -m pytest tests/context_credit/test_concal.py -q
+conda create -n concal-webshop python=3.10 -y
+conda activate concal-webshop
+
+pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cu124
+
+pushd agent_system/environments/env_package/webshop/webshop
+bash setup.sh -d small
+popd
 ```
 
-## Acknowledgments
+Install the training dependencies and prepare the trainer inputs:
 
-Built on [verl-agent/GiGPO](https://github.com/langfengQ/verl-agent), commit
-`20bd331bdbc9026a5668e11362178e10ab7400c8`. Upstream copyright notices remain in the source files. The existing WebShop Ray dependency
-initialization is retained for the experiment environments.
+```bash
+pip install vllm==0.8.4 "ray[default]==2.58.0" \
+  tensordict==0.8.3 transformers==4.51.1 typer==0.9.4
+pip install flash-attn==2.7.4.post1 --no-build-isolation
+pip install -r requirements.txt
+pip install -e . --no-deps
+
+mkdir -p data/verl-agent/webshop/text
+python examples/data_preprocess/prepare.py --mode text \
+  --local_dir ./data/verl-agent/webshop \
+  --train_data_size 16 --val_data_size 256
+```
+
+The generated Parquet files provide text placeholders for the trainer. Actual tasks and observations come from the environments.
+
+Download the base model from either configured environment:
+
+```bash
+python -c "from huggingface_hub import snapshot_download; snapshot_download('Qwen/Qwen2.5-1.5B-Instruct', local_dir='models/Qwen2.5-1.5B-Instruct')"
+```
+
+## 2. Training
+The scripts default to four GPUs and seed 123. Run `wandb login` before training, or set `WANDB_MODE=offline`.
+
+### ALFWorld
+
+```bash
+conda activate concal-alfworld
+export SKIP_CONDA_ACTIVATE=1
+export ALFWORLD_DATA="$HOME/.cache/alfworld"
+bash run_concal_alfworld.sh
+```
+
+### WebShop
+
+```bash
+conda activate concal-webshop
+export SKIP_CONDA_ACTIVATE=1
+bash run_concal_webshop.sh
+```
+
+To use another seed, run `SEED=456 bash run_concal_alfworld.sh` or `SEED=456 bash run_concal_webshop.sh`.
+
+## 3. Results
+
+Success rates are reported as mean ± sample standard deviation across three training runs.
+
+| Algorithm | Task | Model | Success Rate (%) | Training Log |
+| --- | --- | --- | ---: | :---: |
+| ConCal | ALFWorld | Qwen2.5-1.5B-Instruct | 94.01 ± 0.45 | [![W&B][wandb-badge]][alfworld-log] |
+| ConCal | ALFWorld | Qwen2.5-7B-Instruct | - | ongoing |
+| ConCal | WebShop | Qwen2.5-1.5B-Instruct | 79.69 ± 3.41 | [![W&B][wandb-badge]][webshop-log] |
+| ConCal | WebShop | Qwen2.5-7B-Instruct | - | ongoing |
+
+[wandb-badge]: https://img.shields.io/badge/W%26B-view-FFBE00?logo=wandb
+[alfworld-log]: https://forge.coreweave.com/wandb/yingjian-test/gigpo/reports/Training-Logs-on-ALFWorld--VmlldzoxODE4OTg3Ng?accessToken=1jdis1u5i74tnkj55kadoeoacv73l5medwvmfk1ie4s3sbct14v99uijx9rex3u3
+[webshop-log]: https://forge.coreweave.com/wandb/yingjian-test/gigpo/reports/Training-Logs-on-WebShop--VmlldzoxODE4OTk2OA?accessToken=gr0obj06bxn3roumxhecixocj33gu6v5szy0whxuukextaw4txgi8v0t512qxw77
+
+Built on [verl-agent/GiGPO](https://github.com/langfengQ/verl-agent), with environments from [ALFWorld](https://github.com/alfworld/alfworld) and [WebShop](https://github.com/princeton-nlp/WebShop).
