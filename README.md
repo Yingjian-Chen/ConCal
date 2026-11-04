@@ -99,15 +99,21 @@ To use another seed, run `SEED=456 bash run_concal_alfworld.sh` or `SEED=456 bas
 
 Success rates are reported as mean ± sample standard deviation across three training runs.
 
+## 3. Results
+
+Success rates are reported as mean ± sample standard deviation across three training runs.
+
 | Algorithm | Task | Model | Success Rate (%) | Training Log |
 | --- | --- | --- | ---: | :---: |
 | ConCal | ALFWorld | Qwen2.5-1.5B-Instruct | 94.01 ± 0.45 | [![W&B][wandb-badge]][alfworld-log] |
-| ConCal | ALFWorld | Qwen2.5-7B-Instruct | - | ongoing |
+| ConCal | ALFWorld | Qwen2.5-7B-Instruct | 97.14 ± 0.45 | [![W&B][wandb-badge]][alfworld-7b-log] |
 | ConCal | WebShop | Qwen2.5-1.5B-Instruct | 79.69 ± 3.41 | [![W&B][wandb-badge]][webshop-log] |
-| ConCal | WebShop | Qwen2.5-7B-Instruct | - | ongoing |
+| ConCal | WebShop | Qwen2.5-7B-Instruct | 85.16 ± 2.07 | [![W&B][wandb-badge]][webshop-7b-log] |
 
 [wandb-badge]: https://img.shields.io/badge/W%26B-view-FFBE00?logo=wandb
 [alfworld-log]: https://forge.coreweave.com/wandb/yingjian-test/gigpo/reports/Training-Logs-on-ALFWorld--VmlldzoxODE4OTg3Ng?accessToken=1jdis1u5i74tnkj55kadoeoacv73l5medwvmfk1ie4s3sbct14v99uijx9rex3u3
+[alfworld-7b-log]: https://forge.coreweave.com/wandb/yingjian-test/gigpo/reports/Training-Logs-on-ALFWorld--VmlldzoxODIzOTY4MA?accessToken=qoaigh58puvcs125vgow7exwnplk1u1hmubug6knxgw1x6zpmuhneqeagcvmp39a
 [webshop-log]: https://forge.coreweave.com/wandb/yingjian-test/gigpo/reports/Training-Logs-on-WebShop--VmlldzoxODE4OTk2OA?accessToken=gr0obj06bxn3roumxhecixocj33gu6v5szy0whxuukextaw4txgi8v0t512qxw77
+[webshop-7b-log]: https://forge.coreweave.com/wandb/yingjian-test/gigpo/reports/Training-Logs-on-WebShop--VmlldzoxODI1MDgwNQ?accessToken=aprehyaw2h9abqezsmmjdndmyymz8owbt02c5y80i1vv4dt4qgb8gat9xfouvhtr
 
 Built on [verl-agent/GiGPO](https://github.com/langfengQ/verl-agent), with environments from [ALFWorld](https://github.com/alfworld/alfworld) and [WebShop](https://github.com/princeton-nlp/WebShop).
