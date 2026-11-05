@@ -1,6 +1,8 @@
 # ConCal
 Code for **Action-Value Calibration via Continuation Sharing for Long-Horizon Agentic Reinforcement Learning**.
 
+[![Static Badge](https://img.shields.io/badge/2610.37195-red?style=flat&logo=arxiv&logoColor=%23B31B1B&label=Arxiv&labelColor=%23FFFFFF&color=%23B31B1B&link=https%3A%2F%2Farxiv.org%2Fpdf%2F2408.13697)]([https://arxiv.org/abs/2610.37195](https://www.alphaxiv.org/pdf/2610.37195))
+
 In long-horizon agentic RL, methods such as GiGPO compare actions at shared states, but value estimates based on a single sampled continuation remain sensitive to later decisions. ConCal (Continuation Calibration) addresses this by sharing continuation evidence within a rollout batch. It matches same-task visits by their incoming state-action-state transitions, combines shared evidence with each visit’s own transition estimate, and recursively propagates calibrated values backward to refine earlier action-value estimates. This reduces dependence on individual continuations and mitigates local credit distortions without additional rollouts.
 
 ## 1. Setup
